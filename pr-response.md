@@ -48,13 +48,13 @@ I've left the code alphabetical for now so the call stays open. If we go this wa
 
 ## Comment 6, Rebase
 
-I have not run this yet, but here is the conflict and how I would resolve it.
+My branch was opened before the refactor that changed film ids from integers to UUIDs, and that refactor landed on main while my branch was open. I fetched origin and ran git rebase origin/main to move my work on top of it.
 
-My branch was opened before the refactor that changed film ids from integers to UUIDs, and that refactor landed on main while my branch was open. So rebasing onto main conflicts mostly in models.py, where Film.id and CollectionEntry.film_id are UUIDs on main but still integers on my branch, and my new WatchlistEntry does not exist on main at all. There is also a small conflict in the collection service, where my branch switched the film lookup to db.session.get and main kept Film.query.get.
+The interesting part is that only one file threw an actual conflict, the .gitignore, and it was an add/add conflict because main already added a .gitignore of its own while my branch added one too. Main's version already covered everything mine did plus one extra line, so I skipped my redundant commit and kept main's.
 
-To resolve it I would take main's UUID versions of Film and CollectionEntry, and add WatchlistEntry back with a UUID film_id so it points at the migrated Film. In the collection service I would keep db.session.get, since it works the same and is the newer form. Then I would fix the docstrings and the body example in the watchlist code that still say the film id is an int.
+The bigger issue did not show up as a conflict at all. WatchlistEntry was defined back in the very first commit, and main's UUID refactor deleted it from models.py. Since my branch never touched that class again, the rebase treated it as main deleting something I had not changed, so it dropped WatchlistEntry silently with no conflict marker. The app still imported it in the watchlist service, so it would have broken on the next run. I caught it by grepping models.py for the class after the rebase finished. I fixed it by adding WatchlistEntry back with a String(36) UUID film_id so it lines up with the migrated Film, and I updated the leftover int mentions in the service docstring and the route body example to UUID.
 
-To confirm it is clean I would check that git status has no conflicts left, search the project for leftover conflict markers, check git log for any merge commits, and run the tests again.
+To confirm it was clean I checked that git status had no conflicts, searched the project for leftover conflict markers, checked git log for merge commits and found none, and ran the tests again, seven passing.
 
 ## PR Description
 
@@ -99,14 +99,3 @@ For the automated tests, run pytest tests/ and you get seven passing, four for t
 
 ## git log screenshot
 
-Placeholder, I will add the screenshot after I run the commits and rebase. The history I am aiming for is linear with conventional messages and no merge commits, something like this.
-
-```
-feat: add watchlist model and add_to_watchlist endpoint
-fix: rename save_to_watchlist to add_to_watchlist per naming convention
-fix: add deduplication check to prevent duplicate watchlist entries
-fix: update WatchlistEntry film_id to UUID after main branch refactor
-test: add tests for add_to_watchlist
-docs: add pr-response.md with visibility and sort order decisions
-chore: add .gitignore for venv, caches, and local db
-```
