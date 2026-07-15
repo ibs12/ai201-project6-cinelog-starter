@@ -99,3 +99,6 @@ For the automated tests, run pytest tests/ and you get seven passing, four for t
 
 ## git log screenshot
 
+git log --oneline on feature/watchlist, showing seven commits in conventional format with no merge commits.
+
+![git log --oneline on feature/watchlist](image.png)
